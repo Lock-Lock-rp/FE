@@ -104,10 +104,9 @@ export default function Header() {
     <HeaderContainer>
       <Logo to="/">🏠 LOCK LOCK</Logo>
       <Nav>
-        <NavLink to="/">홈</NavLink>
-        <NavLink to="/face">얼굴인식</NavLink>
-        <NavLink to="/logs">로그</NavLink>
-        <LogoutBtn onClick={handleLogout}>로그아웃</LogoutBtn>
+        <NavLink to="/" onClick={() => console.log('홈 클릭!')}>홈</NavLink>
+        <NavLink to="/face" onClick={() => console.log('얼굴인식 클릭!')}>얼굴인식</NavLink>
+        <NavLink to="/logs" onClick={() => console.log('로그 클릭!')}>로그</NavLink>
       </Nav>
     </HeaderContainer>
   );

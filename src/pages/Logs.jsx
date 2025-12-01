@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "../components/Header";
 import LogBox from "../components/LogBox";
 import styled from "@emotion/styled";
+import { getAccessLogs } from "../api/api";
 
 const Container = styled.div`
   min-height: calc(100vh - 72px);
@@ -95,31 +96,46 @@ const StatValue = styled.div`
   color: #7c3aed;
 `;
 
-const allLogs = [
-  "2025-11-17 19:10 방문자 감지",
-  "2025-11-17 18:40 얼굴 인식 성공",
-  "2025-11-17 12:30 문 열림",
-  "2025-11-16 22:10 방문자 감지",
-  "2025-11-16 19:40 문 열림",
-  "2025-11-16 14:20 얼굴 인식 성공",
-  "2025-11-15 20:15 방문자 감지",
-  "2025-11-15 09:30 문 열림",
-  "2025-11-14 18:45 얼굴 인식 실패",
-  "2025-11-14 16:20 방문자 감지",
-];
-
 export default function Logs() {
   const [filter, setFilter] = useState("all");
+  const [allLogs, setAllLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // API에서 로그 가져오기
+  useEffect(() => {
+    const fetchLogs = async () => {
+      setLoading(true);
+      const data = await getAccessLogs();
+      
+      // API 데이터를 표시 형식으로 변환
+      const formatted = data.map(log => 
+        `${log.timestamp || ''} ${log.name || '방문자'} ${log.action || '출입'} ${log.authorized ? '✓' : '✗'}`
+      );
+      
+      setAllLogs(formatted);
+      setLoading(false);
+    };
+
+    fetchLogs();
+    
+    // 10초마다 자동 갱신
+    const interval = setInterval(fetchLogs, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   const getFilteredLogs = () => {
     if (filter === "all") return allLogs;
     if (filter === "visitor") return allLogs.filter(log => log.includes("방문자"));
-    if (filter === "face") return allLogs.filter(log => log.includes("얼굴"));
-    if (filter === "door") return allLogs.filter(log => log.includes("문"));
+    if (filter === "face") return allLogs.filter(log => log.includes("얼굴") || log.includes("인식"));
+    if (filter === "door") return allLogs.filter(log => log.includes("문") || log.includes("출입"));
     return allLogs;
   };
 
   const filteredLogs = getFilteredLogs();
+
+  // 오늘 날짜 필터링
+  const today = new Date().toISOString().split('T')[0];
+  const todayLogs = allLogs.filter(log => log.includes(today));
 
   return (
     <>
@@ -163,7 +179,7 @@ export default function Logs() {
             </StatCard>
             <StatCard>
               <StatLabel>오늘 활동</StatLabel>
-              <StatValue>{allLogs.filter(log => log.includes("2025-11-17")).length}개</StatValue>
+              <StatValue>{todayLogs.length}개</StatValue>
             </StatCard>
             <StatCard>
               <StatLabel>필터링 결과</StatLabel>
@@ -171,7 +187,13 @@ export default function Logs() {
             </StatCard>
           </StatsGrid>
 
-          <LogBox logs={filteredLogs} />
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+              로딩 중...
+            </div>
+          ) : (
+            <LogBox logs={filteredLogs} />
+          )}
         </Wrapper>
       </Container>
     </>

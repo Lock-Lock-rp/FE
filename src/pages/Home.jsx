@@ -5,6 +5,7 @@ import CCTV from '../components/CCTV';
 import FaceBox from '../components/FaceBox';
 import LogBox from '../components/LogBox';
 import { useAuth } from '../context/AuthContext';
+import { getAccessLogs, getAlerts } from '../api/api';
 
 const Container = styled.div`
   min-height: calc(100vh - 72px);
@@ -110,21 +111,53 @@ const StatValue = styled.div`
 export default function Home() {
   const { user } = useAuth();
   const [currentTime, setCurrentTime] = useState(new Date());
-  
+  const [logs, setLogs] = useState([]);
+  const [alerts, setAlerts] = useState([]);
+  const [stats, setStats] = useState({
+    todayVisitors: 0,
+    weeklyAccess: 0,
+    systemStatus: '정상'
+  });
+
   // 실시간 시계
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
-    
+
     return () => clearInterval(timer);
   }, []);
 
-  const logs = [
-    "2025-11-17 19:10 방문자 감지",
-    "2025-11-17 18:40 얼굴 인식 성공",
-    "2025-11-17 12:30 문 열림",
-  ];
+  // 데이터 가져오기
+  useEffect(() => {
+    const fetchData = async () => {
+      const [logsData, alertsData] = await Promise.all([
+        getAccessLogs(),
+        getAlerts()
+      ]);
+
+      setLogs(logsData.slice(0, 5)); // 최근 5개만 표시
+      setAlerts(alertsData);
+
+      // 통계 계산
+      const today = new Date().toISOString().split('T')[0];
+      const todayLogs = logsData.filter(log =>
+        log.timestamp && log.timestamp.includes(today)
+      );
+
+      setStats({
+        todayVisitors: todayLogs.length,
+        weeklyAccess: logsData.length,
+        systemStatus: '정상'
+      });
+    };
+
+    fetchData();
+
+    // 5초마다 자동 갱신
+    const interval = setInterval(fetchData, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const getGreeting = () => {
     const hour = currentTime.getHours();
@@ -133,6 +166,18 @@ export default function Home() {
     return "좋은 저녁이에요";
   };
 
+  // LogBox 형식으로 변환
+  const formattedLogs = logs.map(log =>
+    `${log.timestamp || ''} ${log.name || '방문자'} ${log.action || '출입'}`
+  );
+  // React 코드 안에서
+  window.API = import.meta.env.VITE_API_URL;
+  console.log('API URL:', window.API);
+
+  // 그러면 브라우저 콘솔에서
+  console.log(window.API);
+
+
   return (
     <>
       <Header />
@@ -140,26 +185,29 @@ export default function Home() {
         <WelcomeSection>
           <WelcomeText>{getGreeting()}, {user?.name || user?.email || "사용자"}님! </WelcomeText>
           <WelcomeSubtext>
-            {currentTime.toLocaleDateString('ko-KR', { 
-              year: 'numeric', 
-              month: 'long', 
+            {currentTime.toLocaleDateString('ko-KR', {
+              year: 'numeric',
+              month: 'long',
               day: 'numeric',
               weekday: 'long'
             })} {currentTime.toLocaleTimeString('ko-KR')}
           </WelcomeSubtext>
         </WelcomeSection>
+
         <StatsSection>
           <StatCard>
             <StatLabel>오늘 방문자</StatLabel>
-            <StatValue highlight>3명</StatValue>
+            <StatValue highlight>{stats.todayVisitors}명</StatValue>
           </StatCard>
           <StatCard>
             <StatLabel>이번 주 출입</StatLabel>
-            <StatValue>15회</StatValue>
+            <StatValue>{stats.weeklyAccess}회</StatValue>
           </StatCard>
           <StatCard>
             <StatLabel>시스템 상태</StatLabel>
-            <StatValue style={{ color: '#10b981', fontSize: '20px' }}>● 정상</StatValue>
+            <StatValue style={{ color: '#10b981', fontSize: '20px' }}>
+              ● {stats.systemStatus}
+            </StatValue>
           </StatCard>
         </StatsSection>
 
@@ -168,7 +216,7 @@ export default function Home() {
             <CCTV />
             <FaceBox />
           </Left>
-          <LogBox logs={logs} />
+          <LogBox logs={formattedLogs} />
         </Body>
       </Container>
     </>

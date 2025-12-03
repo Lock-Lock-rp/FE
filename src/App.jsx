@@ -5,6 +5,7 @@ import Signup from "./pages/Signup";
 import Home from "./pages/home";
 import FaceRecognition from "./pages/FaceRecognition";
 import Logs from "./pages/Logs";
+import TestApp from "./TestApp";
 
 function PrivateRoute({ children }) {
   const { user } = useAuth();
@@ -13,20 +14,24 @@ function PrivateRoute({ children }) {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
+    <>
+      <TestApp />
+    </>
 
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
+    // <AuthProvider>
+    //   <BrowserRouter>
 
-          {/* 로그인해야 Home, Face, Logs 접근 가능 */}
-          <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
-          <Route path="/face" element={<PrivateRoute><FaceRecognition /></PrivateRoute>} />
-          <Route path="/logs" element={<PrivateRoute><Logs /></PrivateRoute>} />
-        </Routes>
+    //     <Routes>
+    //       <Route path="/login" element={<Login />} />
+    //       <Route path="/signup" element={<Signup />} />
 
-      </BrowserRouter>
-    </AuthProvider>
-  );
+    //       {/* 로그인해야 Home, Face, Logs 접근 가능 */}
+    //       <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
+    //       <Route path="/face" element={<PrivateRoute><FaceRecognition /></PrivateRoute>} />
+    //       <Route path="/logs" element={<PrivateRoute><Logs /></PrivateRoute>} />
+    //     </Routes>
+
+    //   </BrowserRouter>
+    // </AuthProvider>
+  )
 }

@@ -1,6 +1,69 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import styled from "@emotion/styled";
 import Header from "../components/Header";
+import { detectFace } from "../api/api.js";
+
+export default function FaceRecognition() {
+  const [status, setStatus] = useState("인식 중...");
+  const [isSuccess, setIsSuccess] = useState(false);
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    // 웹캠 스트리밍
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => {
+        if (videoRef.current) videoRef.current.srcObject = stream;
+      })
+      .catch(() => setStatus("웹캠 접근 실패"));
+
+    // 1초마다 얼굴 감지
+    const interval = setInterval(() => {
+      if (!videoRef.current) return;
+      const video = videoRef.current;
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageBase64 = canvas.toDataURL("image/jpeg");
+
+      detectFace({ image: imageBase64 })
+        .then(res => {
+          if (res.success) {
+            setStatus("인식 성공! 문이 열립니다 🔓");
+            setIsSuccess(true);
+            clearInterval(interval);
+          } else {
+            setStatus("얼굴을 카메라에 맞춰주세요");
+          }
+        })
+        .catch(() => setStatus("얼굴 감지 오류"));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <>
+      <Header />
+      <Container>
+        <Box>
+          <CameraIcon success={isSuccess}>
+            📷
+            <video 
+              ref={videoRef} 
+              autoPlay 
+              playsInline 
+              style={{ display: "none" }} 
+            />
+          </CameraIcon>
+          <Title>얼굴을 카메라에 맞춰주세요</Title>
+          <Status success={isSuccess}>{status}</Status>
+        </Box>
+      </Container>
+    </>
+  );
+}
 
 const Container = styled.div`
   min-height: calc(100vh - 80px);
@@ -58,31 +121,3 @@ const Status = styled.div`
     font-weight: 500;
   `}
 `;
-
-export default function FaceRecognition() {
-  const [status, setStatus] = useState("인식 중...");
-  const [isSuccess, setIsSuccess] = useState(false);
-
-  useEffect(() => {
-    setTimeout(() => setStatus("사용자 확인 중..."), 2000);
-    setTimeout(() => {
-      setStatus("인식 성공! 문이 열립니다 🔓");
-      setIsSuccess(true);
-    }, 4000);
-  }, []);
-
-  return (
-    <>
-      <Header />
-      <Container>
-        <Box>
-          <CameraIcon success={isSuccess}>
-            📷
-          </CameraIcon>
-          <Title>얼굴을 카메라에 맞춰주세요</Title>
-          <Status success={isSuccess}>{status}</Status>
-        </Box>
-      </Container>
-    </>
-  );
-}

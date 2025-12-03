@@ -118,13 +118,13 @@ export default function Home() {
     weeklyAccess: 0,
     systemStatus: '정상'
   });
-  
+
   // 실시간 시계
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
-    
+
     return () => clearInterval(timer);
   }, []);
 
@@ -135,16 +135,16 @@ export default function Home() {
         getAccessLogs(),
         getAlerts()
       ]);
-      
+
       setLogs(logsData.slice(0, 5)); // 최근 5개만 표시
       setAlerts(alertsData);
 
       // 통계 계산
       const today = new Date().toISOString().split('T')[0];
-      const todayLogs = logsData.filter(log => 
+      const todayLogs = logsData.filter(log =>
         log.timestamp && log.timestamp.includes(today)
       );
-      
+
       setStats({
         todayVisitors: todayLogs.length,
         weeklyAccess: logsData.length,
@@ -153,7 +153,7 @@ export default function Home() {
     };
 
     fetchData();
-    
+
     // 5초마다 자동 갱신
     const interval = setInterval(fetchData, 5000);
     return () => clearInterval(interval);
@@ -167,9 +167,16 @@ export default function Home() {
   };
 
   // LogBox 형식으로 변환
-  const formattedLogs = logs.map(log => 
+  const formattedLogs = logs.map(log =>
     `${log.timestamp || ''} ${log.name || '방문자'} ${log.action || '출입'}`
   );
+  // React 코드 안에서
+  window.API = import.meta.env.VITE_API_URL;
+  console.log('API URL:', window.API);
+
+  // 그러면 브라우저 콘솔에서
+  console.log(window.API);
+
 
   return (
     <>
@@ -178,15 +185,15 @@ export default function Home() {
         <WelcomeSection>
           <WelcomeText>{getGreeting()}, {user?.name || user?.email || "사용자"}님! </WelcomeText>
           <WelcomeSubtext>
-            {currentTime.toLocaleDateString('ko-KR', { 
-              year: 'numeric', 
-              month: 'long', 
+            {currentTime.toLocaleDateString('ko-KR', {
+              year: 'numeric',
+              month: 'long',
               day: 'numeric',
               weekday: 'long'
             })} {currentTime.toLocaleTimeString('ko-KR')}
           </WelcomeSubtext>
         </WelcomeSection>
-        
+
         <StatsSection>
           <StatCard>
             <StatLabel>오늘 방문자</StatLabel>
